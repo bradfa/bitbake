@@ -1487,7 +1487,7 @@ def profile_function(profile, function, output_fn, process=True):
         prof.dump_stats(output_fn)
         if process:
             process_profilelog(output_fn)
-            serverlog("Raw profiling information saved to %s and processed statistics to %s.report*" % (output_fn, output_fn))
+            bb.server.process.serverlog("Raw profiling information saved to %s and processed statistics to %s.report*" % (output_fn, output_fn))
         return ret
     else:
         return function()
