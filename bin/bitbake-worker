@@ -47,10 +47,7 @@ if len(sys.argv) != 2 or not sys.argv[1].startswith("decafbad"):
 profiling = False
 if sys.argv[1].startswith("decafbadbad"):
     profiling = True
-    try:
-        import cProfile as profile
-    except:
-        import profile
+    import cProfile as profile
 
 # Unbuffer stdout to avoid log truncation in the event
 # of an unorderly exit as well as to provide timely

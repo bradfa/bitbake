@@ -1478,10 +1478,7 @@ def profile_function(profile, function, output_fn, process=True):
     Returns the wrapped function return value
     """
     if profile:
-        try:
-            import cProfile as profile
-        except:
-             import profile
+        import cProfile as profile
         prof = profile.Profile()
         ret = profile.Profile.runcall(prof, function)
         prof.dump_stats(output_fn)

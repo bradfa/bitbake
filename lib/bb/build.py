@@ -771,10 +771,7 @@ def exec_task(fn, task, d, profile = False):
 
         if profile:
             profname = "profile-%s.log" % (d.getVar("PN") + "-" + task)
-            try:
-                import cProfile as profile
-            except:
-                import profile
+            import cProfile as profile
             prof = profile.Profile()
             ret = profile.Profile.runcall(prof, _exec_task, fn, task, d, quieterr)
             prof.dump_stats(profname)
