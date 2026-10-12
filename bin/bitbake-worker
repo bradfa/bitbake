@@ -47,7 +47,6 @@ if len(sys.argv) != 2 or not sys.argv[1].startswith("decafbad"):
 profiling = False
 if sys.argv[1].startswith("decafbadbad"):
     profiling = True
-    import cProfile as profile
 
 # Unbuffer stdout to avoid log truncation in the event
 # of an unorderly exit as well as to provide timely
@@ -330,7 +329,7 @@ def fork_off_task(cfg, data, databuilder, workerdata, extraconfigdata, runtask):
                 if dry_run:
                     return 0
                 try:
-                    ret = bb.build.exec_task(fn, taskname, the_data, cfg.profile)
+                    ret = bb.build.exec_task(fn, taskname, the_data)
                 finally:
                     if fakeroot:
                         fakerootcmd = shlex.split(the_data.getVar("FAKEROOTCMD"))
@@ -342,12 +341,13 @@ def fork_off_task(cfg, data, databuilder, workerdata, extraconfigdata, runtask):
             os._exit(child())
         else:
             profname = "profile-%s.log" % (fn.replace("/", "-") + "-" + taskname)
-            prof = profile.Profile()
-            try: 
-                ret = profile.Profile.runcall(prof, child)
-            finally:
-                prof.dump_stats(profname)
+            ret = 1
+            try:
+                ret = bb.utils.profile_function(True, child, profname, process=False)
                 bb.utils.process_profilelog(profname)
+            except BaseException:
+                sys.stderr.write(traceback.format_exc())
+            finally:
                 os._exit(ret)
     else:
         for key, value in iter(envbackup.items()):
@@ -576,11 +576,11 @@ try:
         worker.serve()
     else:
         profname = "profile-worker.log"
-        prof = profile.Profile()
+        # Do not use process=True: it logs with serverlog(), which writes to
+        # stdout, and stdout is the event pipe to the server
         try:
-            profile.Profile.runcall(prof, worker.serve)
+            bb.utils.profile_function(True, worker.serve, profname, process=False)
         finally:
-            prof.dump_stats(profname)
             bb.utils.process_profilelog(profname)
 except BaseException as e:
     if not normalexit:

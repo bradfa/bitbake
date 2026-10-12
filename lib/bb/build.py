@@ -763,23 +763,13 @@ def _exec_task(fn, task, d, quieterr):
 
     return 0
 
-def exec_task(fn, task, d, profile = False):
+def exec_task(fn, task, d):
     try:
         quieterr = False
         if d.getVarFlag(task, "quieterrors", False) is not None:
             quieterr = True
 
-        if profile:
-            profname = "profile-%s.log" % (d.getVar("PN") + "-" + task)
-            import cProfile as profile
-            prof = profile.Profile()
-            ret = profile.Profile.runcall(prof, _exec_task, fn, task, d, quieterr)
-            prof.dump_stats(profname)
-            bb.utils.process_profilelog(profname)
-
-            return ret
-        else:
-            return _exec_task(fn, task, d, quieterr)
+        return _exec_task(fn, task, d, quieterr)
 
     except Exception:
         from traceback import format_exc
