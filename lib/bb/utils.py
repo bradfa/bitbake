@@ -1464,6 +1464,20 @@ def cpu_count():
 def nonblockingfd(fd):
     fcntl.fcntl(fd, fcntl.F_SETFL, fcntl.fcntl(fd, fcntl.F_GETFL) | os.O_NONBLOCK)
 
+# Profilers started by profile_function() which are active in this process
+_active_profilers = set()
+
+def _disable_inherited_profilers():
+    # A fork() child inherits the active profilers but never writes their data.
+    # From Python 3.12, cProfile uses sys.monitoring, which allows only one
+    # profiler per process, so the child must stop the inherited profiler
+    # before it can start its own.
+    for prof in _active_profilers:
+        prof.disable()
+    _active_profilers.clear()
+
+os.register_at_fork(after_in_child=_disable_inherited_profilers)
+
 def profile_function(profile, function, output_fn, process=True):
     """Common function to profile a code block and optionally process the
     output using or processing function.
@@ -1480,7 +1494,11 @@ def profile_function(profile, function, output_fn, process=True):
     if profile:
         import cProfile as profile
         prof = profile.Profile()
-        ret = profile.Profile.runcall(prof, function)
+        _active_profilers.add(prof)
+        try:
+            ret = profile.Profile.runcall(prof, function)
+        finally:
+            _active_profilers.discard(prof)
         prof.dump_stats(output_fn)
         if process:
             process_profilelog(output_fn)
