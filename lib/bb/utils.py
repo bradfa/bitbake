@@ -1494,16 +1494,19 @@ def profile_function(profile, function, output_fn, process=True):
     if profile:
         import cProfile as profile
         prof = profile.Profile()
+        prof.enable()
         _active_profilers.add(prof)
         try:
-            ret = profile.Profile.runcall(prof, function)
+            return function()
         finally:
+            # Also write the data when function() raises, for example
+            # SystemExit at process exit
+            prof.disable()
             _active_profilers.discard(prof)
-        prof.dump_stats(output_fn)
-        if process:
-            process_profilelog(output_fn)
-            bb.server.process.serverlog("Raw profiling information saved to %s and processed statistics to %s.report*" % (output_fn, output_fn))
-        return ret
+            prof.dump_stats(output_fn)
+            if process:
+                process_profilelog(output_fn)
+                bb.server.process.serverlog("Raw profiling information saved to %s and processed statistics to %s.report*" % (output_fn, output_fn))
     else:
         return function()
 
