@@ -211,7 +211,9 @@ def create_bitbake_parser():
     exec_group.add_argument("-P", "--profile", action="append",
                         default=[],
                         help="Profile the command and save reports. Specify 'main', 'idle' or 'parsing' "
-                             "to indicate which bitbake code to profile.")
+                             "to indicate which bitbake code to profile. From Python 3.12, 'main' "
+                             "and 'idle' each profile all threads of the server, so they cannot be "
+                             "used together.")
 
     exec_group.add_argument("-S", "--dump-signatures", action="append",
                         default=[], metavar="SIGNATURE_HANDLER",
@@ -324,6 +326,11 @@ class BitBakeConfigParameters(cookerdata.ConfigParameters):
 
         if options.quiet and options.debug:
             parser.error("options --quiet and --debug are mutually exclusive")
+
+        # From Python 3.12, cProfile allows only one profiler per process
+        if sys.version_info >= (3, 12) and "main" in options.profile and "idle" in options.profile:
+            parser.error("options --profile main and --profile idle are mutually exclusive "
+                         "from Python 3.12, because each one profiles all threads of the server")
 
         # use configuration files from environment variables
         if "BBPRECONF" in os.environ:
